@@ -8,6 +8,7 @@ Created on 20190618
 import os
 import subprocess
 import Constants
+import xml.etree.ElementTree as ET 
 
 def decodeApks(apkfolder, decodefolder): 
     outFile = os.path.join(decodefolder, "result.txt")
@@ -26,33 +27,15 @@ def decodeApks(apkfolder, decodefolder):
                 print (str(apk) + "can not be decoded")
             result = foundAds(outPath)
             if result:
-                info = str(apk) + ":"
+                info = str(apk) + " has ads : \n"
                 for item in result:
-                    info = info + " " + item + " "
+                    info = info + item + "\n"
                 info = info + "\n"    
-                f.write(info)                
+                f.write(info)
+                outputManifestInfo(outPath, f)
+
         f.close()
     
-    
-        '''
-        found = False
-        for root,dirs,files in os.walk(outPath):
-            if found:
-                continue
-            for dir in dirs:
-                if found:
-                    continue
-                foldPath = os.path.join(root,dir)
-                for key in Constants.ADS_FILTER.keys():
-                    keyfolder = str(key).replace(".", os.sep)
-                    if str(foldPath).__contains__(keyfolder):
-                        print (Constants.ADS_FILTER[key] + "has found")
-                        found = True
-                        continue
-
-
-        pass
-        '''
     pass
 
 def foundAds(outPath):
@@ -69,7 +52,25 @@ def foundAds(outPath):
                     continue
     return result                    
                     
-                    
+def outputManifestInfo(output, f):
+    manifestPath = os.path.join(output, 'AndroidManifest.xml')
+    ET.register_namespace('android', "http://schemas.android.com/apk/res/android")
+    tree = ET.parse(manifestPath)
+    root = tree.getroot()
+    packageName = root.get("package")
+    print ("PackageName is : " + packageName + "\n")
+    for child in root:
+        if child.tag == 'application':
+            info = "AndroidManifest has itmes : \n"
+            print (info)
+            for childItem in child:
+                tag = childItem.tag
+                if tag in ['activity', 'receiver', 'service']:
+                    print(childItem.get('{http://schemas.android.com/apk/res/android}name'))
+                    info = info + childItem.get('{http://schemas.android.com/apk/res/android}name') + '\n'
+            f.write(info)               
+               
+    pass
     
 
 if __name__ == '__main__':
